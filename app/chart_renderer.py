@@ -265,7 +265,7 @@ class ChartRenderer:
         ax.set_axis_off()
         
         # Title
-        ax.text(0.5, 0.95, "💼 PORTFOLIO DASHBOARD", ha="center", fontsize=20, 
+        ax.text(0.5, 0.95, "PORTFOLIO DASHBOARD", ha="center", fontsize=20, 
                 fontweight='bold', color=self.theme.text_primary, transform=ax.transAxes)
         ax.plot([0.05, 0.95], [0.92, 0.92], color=self.theme.grid_line, lw=1, transform=ax.transAxes)
         
@@ -303,8 +303,8 @@ class ChartRenderer:
         ax = fig.add_subplot(111)
         ax.set_axis_off()
         
-        # Title
-        ax.text(0.5, 0.96, "📈 MARKET OVERVIEW", ha="center", fontsize=22, 
+        # Title (no emoji due to font issues)
+        ax.text(0.5, 0.96, "MARKET OVERVIEW", ha="center", fontsize=22, 
                 fontweight='bold', color=self.theme.text_primary, transform=ax.transAxes)
         ax.plot([0.05, 0.95], [0.94, 0.94], color=self.theme.grid_line, lw=1, transform=ax.transAxes)
         
@@ -318,11 +318,21 @@ class ChartRenderer:
         # Data Rows
         y = 0.86
         for stock in stocks[:15]:  # Limit to 15 stocks
-            symbol = stock.get('symbol', 'N/A')
+            symbol = stock.get('ticker', 'N/A')
             price = stock.get('price', 0)
             change = stock.get('change', 0)
-            change_pct = stock.get('changePercent', 0)
-            change_color = self.theme.up_color if change >= 0 else self.theme.down_color
+            change_direction = stock.get('change_direction', 'equal')
+            
+            # Determine color based on direction
+            if change_direction == 'up' or change > 0:
+                change_color = self.theme.up_color
+            elif change_direction == 'down' or change < 0:
+                change_color = self.theme.down_color
+            else:
+                change_color = self.theme.text_primary
+            
+            # Calculate change percentage
+            change_pct = (change / (price - change) * 100) if (price - change) != 0 and change != 0 else 0
             
             ax.text(col_x[0], y, symbol, ha="left", fontsize=10, fontweight='bold', 
                    color=self.theme.text_primary, transform=ax.transAxes)
