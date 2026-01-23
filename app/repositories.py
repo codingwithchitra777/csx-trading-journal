@@ -29,18 +29,18 @@ class TradeRepository:
         return doc.to_dict() if doc.exists else None
 
     def list_trades(self, user_id: str, ticker: Optional[str] = None) -> List[Dict[str, Any]]:
-        q = self.col.where("userId", "==", user_id)
+        q = self.col.where(filter=firestore.FieldFilter("userId", "==", user_id))
         if ticker:
-            q = q.where("ticker", "==", ticker)
+            q = q.where(filter=firestore.FieldFilter("ticker", "==", ticker))
         # Firestore ordering: orderDate then seq
         q = q.order_by("orderDate").order_by("seq")
         return [d.to_dict() for d in q.stream()]
 
     def list_trades_by_side(self, user_id: str, ticker: str, side: str) -> List[Dict[str, Any]]:
         q = (
-            self.col.where("userId", "==", user_id)
-            .where("ticker", "==", ticker)
-            .where("side", "==", side)
+            self.col.where(filter=firestore.FieldFilter("userId", "==", user_id))
+            .where(filter=firestore.FieldFilter("ticker", "==", ticker))
+            .where(filter=firestore.FieldFilter("side", "==", side))
             .order_by("orderDate")
             .order_by("seq")
         )
@@ -55,16 +55,16 @@ class AllocationRepository:
         self.col.document(alloc["allocId"]).set(alloc)
 
     def list_allocations(self, user_id: str, ticker: Optional[str] = None) -> List[Dict[str, Any]]:
-        q = self.col.where("userId", "==", user_id)
+        q = self.col.where(filter=firestore.FieldFilter("userId", "==", user_id))
         if ticker:
-            q = q.where("ticker", "==", ticker)
+            q = q.where(filter=firestore.FieldFilter("ticker", "==", ticker))
         q = q.order_by("createdAt")
         return [d.to_dict() for d in q.stream()]
 
     def list_allocations_for_buy(self, user_id: str, buy_trade_id: str) -> List[Dict[str, Any]]:
         q = (
-            self.col.where("userId", "==", user_id)
-            .where("buyTradeId", "==", buy_trade_id)
+            self.col.where(filter=firestore.FieldFilter("userId", "==", user_id))
+            .where(filter=firestore.FieldFilter("buyTradeId", "==", buy_trade_id))
         )
         return [d.to_dict() for d in q.stream()]
 
@@ -73,13 +73,21 @@ class UserRepository:
         self.db = get_db()
         self.col = self.db.collection("users")
 
-    def upsert_user(self, user_id: str, user_name: str) -> None:
-        self.col.document(user_id).set({
+    def upsert_user(self, user_id: str, user_name: str, chat_id: Optional[int] = None) -> None:
+        user_data = {
             "userId": user_id,
             "userName": user_name,
             "registerDate": datetime.utcnow()
-        }, merge=True)
+        }
+        if chat_id is not None:
+            user_data["chat_id"] = chat_id
+        self.col.document(user_id).set(user_data, merge=True)
 
     def get_user(self, user_id: str) -> Optional[Dict[str, Any]]:
         doc = self.col.document(user_id).get()
         return doc.to_dict() if doc.exists else None
+
+    def get_all_users(self) -> List[Dict[str, Any]]:
+        """Get all registered users"""
+        docs = self.col.stream()
+        return [d.to_dict() for d in docs]
