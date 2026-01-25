@@ -240,13 +240,19 @@ class ChartRenderer:
                 fontweight='bold', color=self.theme.text_primary, transform=ax.transAxes)
         ax.plot([0.1, 0.9], [0.87, 0.87], color=self.theme.grid_line, lw=1, transform=ax.transAxes)
         
-        # Position Details
+        # Position Details - using correct field names from position_detail
+        total_bought = pos.get('totalBoughtQty', 0)
+        total_sold = pos.get('totalSoldQty', 0)
+        remaining = pos.get('remainingQty', 0)
+        sold_pct = pos.get('soldPercent', 0)
+        num_lots = len(pos.get('remainingLots', []))
+        
         details = [
-            ("Quantity", f"{pos.get('totalQty', 0):,}"),
-            ("Avg Cost", f"{pos.get('avgCost', 0):,.0f} KHR"),
-            ("Current Price", f"{pos.get('currentPrice', 0):,.0f} KHR"),
-            ("Unrealised P&L", f"{pos.get('unrealisedPnl', 0):+,} KHR"),
-            ("Realised P&L", f"{pos.get('realisedPnl', 0):+,} KHR"),
+            ("Total Bought", f"{total_bought:,}"),
+            ("Total Sold", f"{total_sold:,}"),
+            ("Remaining Qty", f"{remaining:,}"),
+            ("Sold %", f"{sold_pct:.1f}%"),
+            ("Open Lots", f"{num_lots}"),
         ]
         
         y = 0.75
@@ -255,6 +261,18 @@ class ChartRenderer:
             ax.text(0.85, y, value, ha="right", fontsize=12, fontweight='bold', color=self.theme.text_primary, transform=ax.transAxes)
             ax.plot([0.15, 0.85], [y-0.03, y-0.03], color=self.theme.grid_line, lw=0.5, ls=":", transform=ax.transAxes)
             y -= 0.12
+        
+        # Show remaining lots details
+        if pos.get('remainingLots'):
+            y -= 0.05
+            ax.text(0.15, y, "Remaining Lots:", ha="left", fontsize=11, fontweight='bold',
+                   color=self.theme.text_secondary, transform=ax.transAxes)
+            y -= 0.08
+            for lot in pos['remainingLots'][:3]:  # Show top 3 lots
+                lot_text = f"Seq #{lot['seq']}: {lot['qtyOpen']}@{lot['price']:,}"
+                ax.text(0.20, y, lot_text, ha="left", fontsize=10, 
+                       color=self.theme.text_primary, transform=ax.transAxes)
+                y -= 0.06
         
         return self._save(fig)
 
@@ -280,16 +298,16 @@ class ChartRenderer:
         y = 0.83
         for row in rows[:10]:  # Limit to 10 rows
             ticker = row.get('ticker', 'N/A')
-            qty = row.get('totalQty', 0)
-            avg_cost = row.get('avgCost', 0)
-            current = row.get('currentPrice', 0)
+            qty = row.get('remainingQty', 0)
+            avg_cost = row.get('avgCostRemaining', 0)
+            current = row.get('lastPrice', 0)
             pnl = int(row.get('unrealisedPnl', 0))
             pnl_color = self.theme.up_color if pnl >= 0 else self.theme.down_color
             
             ax.text(col_x[0], y, ticker, ha="left", fontsize=10, color=self.theme.text_primary, transform=ax.transAxes)
             ax.text(col_x[1], y, f"{qty:,}", ha="left", fontsize=10, color=self.theme.text_secondary, transform=ax.transAxes)
-            ax.text(col_x[2], y, f"{avg_cost:,.0f}", ha="left", fontsize=10, color=self.theme.text_secondary, transform=ax.transAxes)
-            ax.text(col_x[3], y, f"{current:,.0f}", ha="left", fontsize=10, color=self.theme.text_secondary, transform=ax.transAxes)
+            ax.text(col_x[2], y, f"{avg_cost:,.0f}" if avg_cost else "N/A", ha="left", fontsize=10, color=self.theme.text_secondary, transform=ax.transAxes)
+            ax.text(col_x[3], y, f"{current:,}" if current else "N/A", ha="left", fontsize=10, color=self.theme.text_secondary, transform=ax.transAxes)
             ax.text(col_x[4], y, f"{pnl:+,}", ha="left", fontsize=10, fontweight='bold', color=pnl_color, transform=ax.transAxes)
             
             ax.plot([0.05, 0.95], [y-0.025, y-0.025], color=self.theme.grid_line, lw=0.3, ls=":", transform=ax.transAxes)
@@ -342,6 +360,148 @@ class ChartRenderer:
             
             ax.plot([0.05, 0.95], [y-0.02, y-0.02], color=self.theme.grid_line, lw=0.3, ls=":", transform=ax.transAxes)
             y -= 0.05
+        
+        return self._save(fig)
+
+    def stock_detail_card(self, ticker: str, buys: list, sells: list, allocs: list, summary: dict) -> io.BytesIO:
+        """Renders a detailed stock card with LIFO allocation visualization."""
+        fig = self._setup_figure(14, 10)
+        
+        # Create two subplots: top for chart, bottom for tables
+        gs = fig.add_gridspec(2, 2, height_ratios=[1, 1.5], width_ratios=[1, 1], 
+                             hspace=0.15, wspace=0.1)
+        ax_summary = fig.add_subplot(gs[0, :])
+        ax_buys = fig.add_subplot(gs[1, 0])
+        ax_sells = fig.add_subplot(gs[1, 1])
+        
+        # --- Summary Panel (Top) ---
+        ax_summary.set_axis_off()
+        ax_summary.text(0.5, 0.95, f"{ticker.upper()} - STOCK DETAILS (Lowest Price First)", 
+                       ha="center", fontsize=22, fontweight='bold', 
+                       color=self.theme.text_primary, transform=ax_summary.transAxes)
+        ax_summary.plot([0.05, 0.95], [0.90, 0.90], color=self.theme.grid_line, 
+                       lw=2, transform=ax_summary.transAxes)
+        
+        # Summary Stats
+        total_bought = summary.get('totalBought', 0)
+        total_sold = summary.get('totalSold', 0)
+        remaining = summary.get('remaining', 0)
+        realised_pnl = summary.get('realisedPnl', 0)
+        
+        pnl_color = self.theme.up_color if realised_pnl >= 0 else self.theme.down_color
+        
+        stats = [
+            ("Total Bought", f"{total_bought:,}", self.theme.text_primary),
+            ("Total Sold", f"{total_sold:,}", self.theme.text_primary),
+            ("Remaining", f"{remaining:,}", self.theme.text_primary),
+            ("Realised P/L", f"{realised_pnl:+,} KHR", pnl_color),
+        ]
+        
+        x_pos = 0.15
+        for label, value, color in stats:
+            ax_summary.text(x_pos, 0.70, label, ha="center", fontsize=11, 
+                          color=self.theme.text_secondary, transform=ax_summary.transAxes)
+            ax_summary.text(x_pos, 0.50, value, ha="center", fontsize=16, 
+                          fontweight='bold', color=color, transform=ax_summary.transAxes)
+            x_pos += 0.20
+        
+        # --- BUY Orders Panel (Bottom Left) ---
+        ax_buys.set_facecolor("none")
+        ax_buys.set_xlim(0, 1)
+        ax_buys.set_ylim(0, 1)
+        ax_buys.axis('off')
+        
+        ax_buys.text(0.5, 0.95, "BUY ORDERS (Lowest Price First)", 
+                ha="center", fontsize=12, fontweight='bold', 
+                color=self.theme.up_color, transform=ax_buys.transAxes)
+        ax_buys.plot([0.05, 0.95], [0.92, 0.92], color=self.theme.grid_line, 
+                    lw=1, transform=ax_buys.transAxes)
+        
+        # Header
+        headers = ["Seq", "Qty@Price", "Remaining"]
+        col_x = [0.08, 0.35, 0.70]
+        y = 0.88
+        for i, h in enumerate(headers):
+            ax_buys.text(col_x[i], y, h, ha="left", fontsize=9, fontweight='bold',
+                        color=self.theme.text_secondary, transform=ax_buys.transAxes)
+        
+        # Buy data (reversed for LIFO - most recent first)
+        y = 0.82
+        for buy in buys[:8]:  # Show up to 8 buys
+            seq = buy.get('seq', '?')
+            qty = buy.get('qty', 0)
+            price = buy.get('price', 0)
+            remaining = buy.get('remaining', 0)
+            
+            status = "OPEN" if remaining > 0 else "SOLD"
+            status_color = self.theme.up_color if remaining > 0 else self.theme.text_secondary
+            
+            ax_buys.text(col_x[0], y, f"{status} #{seq}", ha="left", fontsize=9,
+                        color=status_color, transform=ax_buys.transAxes)
+            ax_buys.text(col_x[1], y, f"{qty}@{price:,}", ha="left", fontsize=9,
+                        color=self.theme.text_secondary, transform=ax_buys.transAxes)
+            ax_buys.text(col_x[2], y, f"{remaining}", ha="left", fontsize=9,
+                        fontweight='bold' if remaining > 0 else 'normal',
+                        color=self.theme.up_color if remaining > 0 else self.theme.text_secondary,
+                        transform=ax_buys.transAxes)
+            
+            ax_buys.plot([0.05, 0.95], [y-0.03, y-0.03], color=self.theme.grid_line, 
+                        lw=0.3, ls=":", transform=ax_buys.transAxes)
+            y -= 0.09
+        
+        # --- SELL Orders Panel (Bottom Right) ---
+        ax_sells.set_facecolor("none")
+        ax_sells.set_xlim(0, 1)
+        ax_sells.set_ylim(0, 1)
+        ax_sells.axis('off')
+        
+        ax_sells.text(0.5, 0.95, "SELL ORDERS", 
+                 ha="center", fontsize=12, fontweight='bold', 
+                 color=self.theme.down_color, transform=ax_sells.transAxes)
+        ax_sells.plot([0.05, 0.95], [0.92, 0.92], color=self.theme.grid_line, 
+                     lw=1, transform=ax_sells.transAxes)
+        
+        # Header
+        headers = ["Seq", "Qty@Price", "P/L"]
+        y = 0.88
+        for i, h in enumerate(headers):
+            ax_sells.text(col_x[i], y, h, ha="left", fontsize=9, fontweight='bold',
+                         color=self.theme.text_secondary, transform=ax_sells.transAxes)
+        
+        # Sell data
+        y = 0.82
+        for sell in sells[:8]:  # Show up to 8 sells
+            seq = sell.get('seq', '?')
+            qty = sell.get('qty', 0)
+            price = sell.get('price', 0)
+            pnl = sell.get('pnl', 0)
+            matched = sell.get('matched', [])
+            
+            pnl_color = self.theme.up_color if pnl >= 0 else self.theme.down_color
+            
+            ax_sells.text(col_x[0], y, f"#{seq}", ha="left", fontsize=9,
+                         color=self.theme.text_primary, transform=ax_sells.transAxes)
+            ax_sells.text(col_x[1], y, f"{qty}@{price:,}", ha="left", fontsize=9,
+                         color=self.theme.text_secondary, transform=ax_sells.transAxes)
+            ax_sells.text(col_x[2], y, f"{pnl:+,}", ha="left", fontsize=9,
+                         fontweight='bold', color=pnl_color, transform=ax_sells.transAxes)
+            
+            ax_sells.plot([0.05, 0.95], [y-0.03, y-0.03], color=self.theme.grid_line, 
+                         lw=0.3, ls=":", transform=ax_sells.transAxes)
+            y -= 0.04
+            
+            # Show matched buys (indented)
+            for match in matched[:2]:  # Show up to 2 matches per sell
+                buy_seq = match.get('buySeq', '?')
+                match_qty = match.get('qty', 0)
+                match_price = match.get('price', 0)
+                
+                ax_sells.text(0.12, y, f"-> #{buy_seq}: {match_qty}@{match_price:,}", 
+                            ha="left", fontsize=7, color=self.theme.text_secondary,
+                            transform=ax_sells.transAxes, style='italic')
+                y -= 0.04
+            
+            y -= 0.01  # Extra space between sells
         
         return self._save(fig)
 

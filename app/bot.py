@@ -26,7 +26,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 from app.config import settings
 from app.repositories import TradeRepository, AllocationRepository, UserRepository
-from app.services_fifo import FifoMatcherService
+from app.services_lifo import LifoMatcherService
 from app.services_pricing import PricingService
 from app.services_portfolio import PortfolioService
 from app.chart_renderer import ChartRenderer
@@ -98,7 +98,7 @@ class CsxTradingBot:
         self.alloc_repo = AllocationRepository()
         self.user_repo = UserRepository()
         self.pricing = PricingService()
-        self.fifo = FifoMatcherService(self.trade_repo, self.alloc_repo)
+        self.lifo = LifoMatcherService(self.trade_repo, self.alloc_repo)
         self.portfolio = PortfolioService(self.trade_repo, self.alloc_repo, self.pricing)
         self.renderer = ChartRenderer(tz_name="Asia/Phnom_Penh")
         self.parser = CommandParser()
@@ -118,6 +118,7 @@ class CsxTradingBot:
         app.add_handler(CommandHandler("buy", self.buy_cmd))
         app.add_handler(CommandHandler("sell", self.sell_cmd))
         app.add_handler(CommandHandler("position", self.position_cmd))
+        app.add_handler(CommandHandler("stock", self.stock_cmd))
         app.add_handler(CommandHandler("portfolio", self.portfolio_cmd))
         app.add_handler(CommandHandler("show_all", self.show_all_cmd))
         app.add_handler(CommandHandler("top_orders", self.top_orders_cmd))
@@ -153,6 +154,7 @@ class CsxTradingBot:
             "💼 /buy$ABC 7300 100\n"
             "💼 /sell$ABC 7400 100\n"
             "📈 /portfolio, /position ABC\n"
+            "📋 /stock ABC - Stock details (Lowest Price)\n"
             "🏆 /top_orders, /top_tickers"
         )
 
@@ -165,7 +167,7 @@ class CsxTradingBot:
         try:
             res = self.pricing.get_latest_price(ticker)
             price = float(res.price or 0)
-            change = float(res.change or 0)
+            change = float(res.change or 0) if res.change is not None else 0.0
             direction = (res.change_direction or "equal").lower()
 
             if not price:
@@ -214,18 +216,30 @@ class CsxTradingBot:
 
         caption = f"✅ {side} confirmed | Seq #{seq}"
         
-        # FIFO Logic for Sells
+        # Lowest Price Matching for Sells
         if side == "SELL":
             try:
-                allocs = self.fifo.match_sell_fifo(trade)
+                allocs = self.lifo.match_sell_lifo(trade)
                 realised = sum(int(a.get("realisedPnl", 0)) for a in allocs)
                 caption += f" | P/L: {realised:+,} riel"
+                # Show which buy orders were matched
+                if allocs:
+                    matched_info = []
+                    for a in allocs:
+                        buy_seq = self._get_trade_seq(a.get("buyTradeId"))
+                        matched_info.append(f"#{buy_seq} ({a['qtyAllocated']}@{a['buyPrice']:,})")
+                    caption += f"\n📦 Matched: {', '.join(matched_info)}"
             except Exception as e:
-                caption += "\n(FIFO match failed, but trade saved)"
+                caption += "\n(LIFO match failed, but trade saved)"
 
         img = self.renderer.trade_card(ticker, side, price, qty, comm, seq)
         img.name = f"{cmd}_{ticker}_{seq}.jpg"
         await update.message.reply_photo(photo=img, caption=caption)
+
+    def _get_trade_seq(self, trade_id: str) -> int:
+        """Helper to get trade sequence number"""
+        trade = self.trade_repo.get_trade(trade_id)
+        return trade.get("seq", 0) if trade else 0
 
     async def position_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not context.args:
@@ -236,6 +250,86 @@ class CsxTradingBot:
         img = self.renderer.position_card(ticker, pos)
         img.name = f"pos_{ticker}.jpg"
         await update.message.reply_photo(photo=img, caption=f"Position: {ticker}")
+
+    async def stock_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show detailed stock information with lowest price matching"""
+        if not context.args:
+            await update.message.reply_text("Usage: /stock ABC")
+            return
+        
+        ticker = context.args[0].upper()
+        uid = self._user_id(update)
+        
+        # Get all trades for this ticker
+        trades = self.trade_repo.list_trades(uid, ticker)
+        if not trades:
+            await update.message.reply_text(f"❌ No trades found for {ticker}")
+            return
+        
+        # Get all allocations for this ticker
+        allocs = self.alloc_repo.list_allocations(uid, ticker)
+        
+        # Prepare buy orders (lowest price first)
+        buys = [t for t in trades if t["side"] == "BUY"]
+        buys_sorted = sorted(buys, key=lambda x: x["price"])  # Show lowest price first
+        
+        buy_data = []
+        for buy in buys_sorted:
+            allocated = sum(int(a["qtyAllocated"]) for a in allocs if a["buyTradeId"] == buy["tradeId"])
+            remaining = buy["qty"] - allocated
+            buy_data.append({
+                "seq": buy["seq"],
+                "qty": buy["qty"],
+                "price": buy["price"],
+                "remaining": remaining
+            })
+        
+        # Prepare sell orders
+        sells = [t for t in trades if t["side"] == "SELL"]
+        sell_data = []
+        for sell in sells:
+            sell_allocs = [a for a in allocs if a["sellTradeId"] == sell["tradeId"]]
+            total_pnl = sum(int(a["realisedPnl"]) for a in sell_allocs)
+            
+            matched = []
+            for a in sell_allocs:
+                buy_trade = self.trade_repo.get_trade(a["buyTradeId"])
+                if buy_trade:
+                    matched.append({
+                        "buySeq": buy_trade["seq"],
+                        "qty": a["qtyAllocated"],
+                        "price": a["buyPrice"]
+                    })
+            
+            sell_data.append({
+                "seq": sell["seq"],
+                "qty": sell["qty"],
+                "price": sell["price"],
+                "pnl": total_pnl,
+                "matched": matched
+            })
+        
+        # Summary
+        total_bought = sum(t["qty"] for t in buys)
+        total_sold = sum(t["qty"] for t in sells)
+        total_allocated = sum(int(a["qtyAllocated"]) for a in allocs)
+        remaining_qty = total_bought - total_allocated
+        total_realised_pnl = sum(int(a["realisedPnl"]) for a in allocs)
+        
+        summary = {
+            "totalBought": total_bought,
+            "totalSold": total_sold,
+            "remaining": remaining_qty,
+            "realisedPnl": total_realised_pnl
+        }
+        
+        # Generate visual card
+        img = self.renderer.stock_detail_card(ticker, buy_data, sell_data, allocs, summary)
+        img.name = f"stock_{ticker}.png"
+        
+        emoji = "📈" if total_realised_pnl >= 0 else "📉"
+        caption = f"{emoji} {ticker} | P/L: {total_realised_pnl:+,} riel | Remaining: {remaining_qty}"
+        await update.message.reply_photo(photo=img, caption=caption)
 
     async def portfolio_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = self._user_id(update)

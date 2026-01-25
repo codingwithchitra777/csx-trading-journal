@@ -55,12 +55,20 @@ class PricingService:
                 for stock_data in auction_data:
                     if stock_data.get("stock", "").upper() == symbol.upper():
                         # Remove commas from price string and convert to float
-                        price_str = str(stock_data.get("close", "")).replace(",", "")
-                        latest_price = float(price_str)
+                        price_str = str(stock_data.get("close", "0")).replace(",", "").strip()
+                        if price_str and price_str != "0":
+                            latest_price = float(price_str)
                         
-                        # Extract change info
-                        change = stock_data.get("change")  # e.g., 40 or -40
-                        change_direction = stock_data.get("changeUpDown")  # "up", "down", "equal"
+                        # Extract change info - handle both string and numeric types
+                        change_val = stock_data.get("change")
+                        if change_val is not None:
+                            if isinstance(change_val, str):
+                                change_val = change_val.replace(",", "").strip()
+                                change = int(float(change_val)) if change_val else 0
+                            else:
+                                change = int(change_val)
+                        
+                        change_direction = stock_data.get("changeUpDown", "equal")
                         break
         except Exception as e:
             print(f"Error parsing price for {symbol}: {e}")

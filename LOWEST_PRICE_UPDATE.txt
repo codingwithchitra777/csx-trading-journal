@@ -1,0 +1,103 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║      ✅ LOWEST PRICE FIRST MATCHING - NOW ACTIVE            ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+🎯 WHAT CHANGED
+═══════════════
+
+The bot now matches sells with the LOWEST PRICED purchases first
+(instead of LIFO - Last In First Out).
+
+This MAXIMIZES your profit on each sale! 📈
+
+
+💰 HOW IT WORKS
+══════════════
+
+When you sell shares, the system automatically finds your 
+CHEAPEST purchases and sells those first.
+
+Example:
+  Buy #1: 100 @ 7,000 riel (cheapest)
+  Buy #2: 100 @ 7,100 riel
+  Buy #3: 100 @ 7,200 riel (most expensive)
+  
+  Sell: 150 @ 7,500 riel
+  
+  ✅ Matches with Buy #1 (100) and Buy #2 (50)
+  ✅ Profit: 70,000 riel
+  ✅ Buy #3 remains in your position
+
+
+📊 PROFIT COMPARISON
+═══════════════════
+
+Same scenario, different matching methods:
+
+  Lowest Price First: 70,000 riel ⭐ HIGHEST
+  FIFO (oldest first): 70,000 riel
+  LIFO (newest first): 50,000 riel ❌ LOWEST
+
+
+✅ BENEFITS
+══════════
+
+✓ MAXIMIZES profit on every sale
+✓ Sells your cheapest shares first
+✓ Keeps expensive shares for potential higher gains
+✓ Better for active trading strategies
+✓ Clear tracking of which lots were sold
+
+
+🎨 VISUAL FEATURES
+═════════════════
+
+/stock ABC
+  → Shows buy orders sorted by LOWEST PRICE FIRST
+  → Displays which cheap lots were sold
+  → Shows remaining expensive lots
+  → Beautiful dark-themed chart
+
+/position ABC
+  → Current position summary
+  → Remaining lots details
+
+
+📱 BOT RESPONSES
+═══════════════
+
+When you sell:
+  ✅ SELL confirmed | Seq #4 | P/L: +70,000 riel
+  📦 Matched: #1 (100@7,000), #2 (50@7,100)
+  
+  ↑ Shows which LOW PRICE buys were matched
+
+
+🧪 TEST IT OUT
+═════════════
+
+Try these commands:
+  /buy$ABC 7000 100    (cheapest)
+  /buy$ABC 7100 100
+  /buy$ABC 7200 100    (most expensive)
+  /sell$ABC 7500 150   (see the profit!)
+  /stock ABC           (see the visualization)
+
+
+📁 FILES MODIFIED
+════════════════
+
+✓ app/services_lifo.py - Now sorts by price (lowest first)
+✓ app/bot.py - Updated to show "Lowest Price First"
+✓ app/chart_renderer.py - Updated chart labels
+✓ README.md - Updated documentation
+
+
+🚀 READY TO USE
+══════════════
+
+  python main.py
+
+Your bot now MAXIMIZES profit by selling cheap shares first! 🎊
