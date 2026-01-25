@@ -1,0 +1,169 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║    CSX TRADING JOURNAL - SYSTEMD SERVICE SETUP              ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+✅ FILES READY
+═════════════
+
+1. csx-trading-journal.service
+   → Systemd service unit file
+   → Location: /workspaces/csx-trading-journal/
+
+2. setup-systemd.sh
+   → Installation script (run with sudo)
+   → Location: /workspaces/csx-trading-journal/
+
+
+🚀 QUICK SETUP
+══════════════
+
+Run this ONE command to install:
+
+   sudo /workspaces/csx-trading-journal/setup-systemd.sh
+
+That's it! Your bot will:
+   ✓ Start automatically on server boot
+   ✓ Run continuously in the background
+   ✓ Auto-restart if it crashes
+   ✓ Log all activity to systemd journal
+
+
+📊 CHECK STATUS
+═══════════════
+
+   sudo systemctl status csx-trading-journal
+
+
+📋 VIEW LOGS
+═════════════
+
+Last 50 lines:
+   journalctl -u csx-trading-journal -n 50
+
+Real-time logs:
+   journalctl -u csx-trading-journal -f
+
+Errors only:
+   journalctl -u csx-trading-journal -p err
+
+
+⚙️  MANAGE SERVICE
+═════════════════
+
+Start:
+   sudo systemctl start csx-trading-journal
+
+Stop:
+   sudo systemctl stop csx-trading-journal
+
+Restart:
+   sudo systemctl restart csx-trading-journal
+
+Reload config:
+   sudo systemctl reload csx-trading-journal
+
+
+🔍 VERIFY IT'S WORKING
+═════════════════════
+
+Check if active:
+   sudo systemctl is-active csx-trading-journal
+   → Should show: active
+
+Check if enabled on boot:
+   sudo systemctl is-enabled csx-trading-journal
+   → Should show: enabled
+
+Check full status:
+   sudo systemctl status csx-trading-journal
+
+
+🐛 TROUBLESHOOTING
+═════════════════
+
+Service won't start?
+   journalctl -u csx-trading-journal -n 100
+
+Check service is installed:
+   systemctl list-unit-files | grep csx-trading-journal
+
+Check Python path:
+   ls /workspaces/csx-trading-journal/py-venv/bin/python
+
+Fix permissions:
+   sudo chown -R codespace:codespace /workspaces/csx-trading-journal
+
+
+📁 SERVICE DETAILS
+═════════════════
+
+Name:         csx-trading-journal
+Type:         simple
+User:         codespace
+Directory:    /workspaces/csx-trading-journal
+Python:       /workspaces/csx-trading-journal/py-venv/bin/python
+Command:      python main.py
+Restart:      always (on failure)
+Delay:        10 seconds (between restarts)
+Logs:         systemd journal
+
+
+✨ FEATURES
+═══════════
+
+✓ Automatic startup on server boot
+✓ Continuous background operation
+✓ Auto-restart on crashes (10 second delay)
+✓ Full logging to systemd journal
+✓ Easy start/stop/restart commands
+✓ Can be monitored with standard tools
+
+
+📝 MANUAL SETUP (if needed)
+═════════════════════════
+
+   # Copy file
+   sudo cp csx-trading-journal.service /etc/systemd/system/
+
+   # Reload systemd
+   sudo systemctl daemon-reload
+
+   # Enable on boot
+   sudo systemctl enable csx-trading-journal
+
+   # Start service
+   sudo systemctl start csx-trading-journal
+
+
+🎯 DAILY WORKFLOW
+═════════════════
+
+Check if bot is running:
+   sudo systemctl status csx-trading-journal
+
+View recent logs:
+   journalctl -u csx-trading-journal -n 20
+
+Restart bot:
+   sudo systemctl restart csx-trading-journal
+
+Follow logs live:
+   journalctl -u csx-trading-journal -f
+
+
+💡 TIPS
+═══════
+
+• Use "journalctl -f" to watch logs in real-time
+• Service automatically restarts if it crashes
+• Logs are persistent in systemd journal
+• Can be managed from anywhere with sudo
+• No need to SSH into the box to restart
+
+
+📚 FULL DOCUMENTATION
+═════════════════════
+
+See: SYSTEMD_SETUP.md for detailed guide

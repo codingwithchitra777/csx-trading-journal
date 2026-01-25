@@ -1,0 +1,17 @@
+[Unit]
+Description=CSX Trading Journal Bot
+After=network.target
+
+[Service]
+Type=simple
+User=codespace
+WorkingDirectory=/workspaces/csx-trading-journal
+ExecStart=/workspaces/csx-trading-journal/py-venv/bin/python main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+Environment="PATH=/workspaces/csx-trading-journal/py-venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+[Install]
+WantedBy=multi-user.target

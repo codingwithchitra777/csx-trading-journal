@@ -1,0 +1,218 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║        ✅ SYSTEMD SERVICE SETUP - COMPLETE                  ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+📦 WHAT WAS CREATED
+═══════════════════
+
+1. csx-trading-journal.service (456 bytes)
+   - Systemd service unit file
+   - Configured to run main.py with virtual environment
+   - Auto-restart on failure
+   - Logs to systemd journal
+
+2. setup-systemd.sh (1.8K, executable)
+   - Installation script that:
+     * Copies service to /etc/systemd/system/
+     * Reloads systemd daemon
+     * Enables service on boot
+     * Starts the service
+
+3. SYSTEMD_SETUP.md (5.1K)
+   - Detailed documentation
+   - Installation steps
+   - Management commands
+   - Troubleshooting guide
+   - Log viewing examples
+
+4. SYSTEMD_QUICK_REF.txt (4.3K)
+   - Quick reference guide
+   - Common commands
+   - Daily workflow tips
+   - Verification steps
+
+
+🚀 ONE-COMMAND INSTALLATION
+═════════════════════════════
+
+On your GitHub server, run:
+
+    sudo /workspaces/csx-trading-journal/setup-systemd.sh
+
+This will:
+    ✓ Install the service file
+    ✓ Enable it to start on boot
+    ✓ Start the bot immediately
+
+
+✨ WHAT YOU GET
+═══════════════
+
+✅ Auto-start on server boot
+✅ Always running in background
+✅ Auto-restart if crashes (10 sec delay)
+✅ Full logging to systemd journal
+✅ Easy management with systemctl commands
+✅ Standard Linux service tools
+
+
+📊 MONITOR YOUR BOT
+═════════════════
+
+Check if running:
+    sudo systemctl status csx-trading-journal
+
+View logs (live):
+    journalctl -u csx-trading-journal -f
+
+View last 50 lines:
+    journalctl -u csx-trading-journal -n 50
+
+View errors only:
+    journalctl -u csx-trading-journal -p err
+
+
+⚙️  MANAGE YOUR BOT
+═════════════════
+
+Start:
+    sudo systemctl start csx-trading-journal
+
+Stop:
+    sudo systemctl stop csx-trading-journal
+
+Restart:
+    sudo systemctl restart csx-trading-journal
+
+Check status:
+    sudo systemctl status csx-trading-journal
+
+Enable on boot:
+    sudo systemctl enable csx-trading-journal
+
+Disable on boot:
+    sudo systemctl disable csx-trading-journal
+
+
+🔍 SERVICE CONFIGURATION
+════════════════════════
+
+Service Name:     csx-trading-journal
+Type:             simple
+User:             codespace
+Working Dir:      /workspaces/csx-trading-journal
+Python Executable: /workspaces/csx-trading-journal/py-venv/bin/python
+Command:          python main.py
+Auto-restart:     Yes (on failure)
+Restart Delay:    10 seconds
+Logging:          systemd journal
+Boot Startup:     Enabled
+
+
+💾 FILE LOCATIONS
+════════════════
+
+In your project:
+    /workspaces/csx-trading-journal/csx-trading-journal.service
+    /workspaces/csx-trading-journal/setup-systemd.sh
+
+When installed on server:
+    /etc/systemd/system/csx-trading-journal.service
+
+
+📋 DEPLOYMENT STEPS
+═══════════════════
+
+1. Push to GitHub
+   git add .
+   git commit -m "Add systemd service files"
+   git push
+
+2. SSH to server
+   ssh user@your-server
+
+3. Pull latest code
+   cd /workspaces/csx-trading-journal
+   git pull
+
+4. Run setup script
+   sudo /workspaces/csx-trading-journal/setup-systemd.sh
+
+5. Verify service
+   sudo systemctl status csx-trading-journal
+
+
+🎯 DAILY OPERATIONS
+═══════════════════
+
+Check bot status:
+    sudo systemctl status csx-trading-journal
+
+Restart bot (after code changes):
+    sudo systemctl restart csx-trading-journal
+
+View today's logs:
+    journalctl -u csx-trading-journal --since today
+
+Follow logs in real-time:
+    journalctl -u csx-trading-journal -f
+
+Check for errors:
+    journalctl -u csx-trading-journal -p err
+
+
+🔧 TROUBLESHOOTING
+═════════════════
+
+Service won't start?
+    → Check logs: journalctl -u csx-trading-journal -n 100
+    → Check Python path exists
+    → Check permissions on /workspaces/csx-trading-journal
+
+Service crashes frequently?
+    → Check logs for errors
+    → Check Firebase credentials
+    → Check Telegram token
+
+Can't find logs?
+    → Try: journalctl --since "1 hour ago" -u csx-trading-journal
+
+Service not starting on boot?
+    → Check enabled: sudo systemctl is-enabled csx-trading-journal
+    → Re-enable if needed: sudo systemctl enable csx-trading-journal
+
+
+💡 TIPS & TRICKS
+═════════════════
+
+• Logs are persistent - no log rotation needed
+• Service user is 'codespace' - ensure it has permissions
+• Restart delay is 10 seconds to prevent rapid restart loops
+• Use "systemctl show" for detailed service information
+• Can manage service from anywhere with sudo and systemctl
+
+
+📚 MORE HELP
+═════════════
+
+Detailed guide: SYSTEMD_SETUP.md
+Quick reference: SYSTEMD_QUICK_REF.txt
+
+View in project:
+    cat SYSTEMD_SETUP.md
+    cat SYSTEMD_QUICK_REF.txt
+
+
+🎊 YOU'RE ALL SET!
+═════════════════
+
+Your bot is ready to:
+    ✓ Run on the server 24/7
+    ✓ Survive crashes and reboots
+    ✓ Be easily monitored and managed
+    ✓ Be updated without losing logs
+
+Happy trading! 📈
