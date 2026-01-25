@@ -134,7 +134,8 @@ class CsxTradingBot:
     # --- Helpers ---
     
     def _user_id(self, update: Update) -> str:
-        return settings.default_user_id
+        """Extract unique user ID from Telegram update (uses Telegram user ID)"""
+        return str(update.effective_user.id)
 
     def _commission(self, price: int, qty: int) -> int:
         return int(price * qty * self.COMMISSION_RATE)
@@ -181,23 +182,11 @@ class CsxTradingBot:
             await update.message.reply_text("❌ Error fetching price")
 
     async def buy_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self._handle_trade(update, context, "BUY")
+        await self._handle_trade(update, context, "BUY")
 
     async def sell_cmd(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self._handle_trade(update, context, "SELL")
+        await self._handle_trade(update, context, "SELL")
 
-    def _handle_trade(self, update: Update, context: ContextTypes.DEFAULT_TYPE, side: str):
-        """Unified trade handler to reduce duplication."""
-        cmd = side.lower()
-        args = self.parser.parse_trade_args(update, context, cmd)
-        if not args:
-            import asyncio # Lazy import for non-async context warning if needed, but we are in async
-            # Use create_task if we were not in an async func, but here we can just return task or await
-            # Since this is a synchronous helper called by async, we need to return the awaitable or change structure.
-            # Ideally, refactor this to be async.
-            return
-
-    # Let's fix the above: make _handle_trade async
     async def _handle_trade(self, update: Update, context: ContextTypes.DEFAULT_TYPE, side: str):
         cmd = side.lower()
         args = self.parser.parse_trade_args(update, context, cmd)
