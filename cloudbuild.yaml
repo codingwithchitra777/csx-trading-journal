@@ -31,8 +31,10 @@ steps:
       - '0'
       - '--timeout'
       - '300s'
+      - '--set-secrets'
+      - 'TELEGRAM_BOT_TOKEN=telegram-bot-token:latest,FIREBASE_CREDENTIALS=firebase-service-account:latest'
       - '--set-env-vars'
-      - 'TELEGRAM_BOT_TOKEN=7805780868:AAESFXGhd4tGS9jEpFcSrifvLqTf30m3HcE,FIREBASE_SERVICE_ACCOUNT_JSON=/app/firebase/serviceAccountKey.json,FIREBASE_PROJECT_ID=codingwithchitra-3b07d'
+      - 'FIREBASE_PROJECT_ID=codingwithchitra-3b07d'
 
 images:
   - 'gcr.io/$PROJECT_ID/csx-trading-journal:$COMMIT_SHA'

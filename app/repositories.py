@@ -11,7 +11,9 @@ def get_db():
     global _db
     if _db is None:
         if not firebase_admin._apps:
-            cred = credentials.Certificate(settings.firebase_sa_path)
+            # Get credentials from config (supports both file and Secret Manager)
+            cred_dict = settings.get_firebase_credentials()
+            cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred, {"projectId": settings.firebase_project_id})
         _db = firestore.client()
     return _db
