@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+py-venv/
+myvenv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+test_*.py
+*_test.py
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Config files (except essential ones)
+.env
+*.service
+setup-systemd.sh
+demo_charts.py
+final_verification.py
+lifo_example.py
