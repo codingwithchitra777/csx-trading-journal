@@ -7,7 +7,9 @@ import sys
 import os
 import asyncio
 import logging
+from contextlib import suppress
 from aiohttp import web
+from telegram import Update
 from app.bot import CsxTradingBot  # Import the class
 
 # Configure global logging
@@ -68,15 +70,18 @@ async def _run_bot_with_healthcheck() -> None:
 
     health_runner: web.AppRunner | None = None
     try:
+        # Start health server first so Cloud Run sees the port
+        health_runner = await _start_health_server(port)
+        logger.info("Health endpoint started on port %s", port)
+
         async with application:
             await application.initialize()
             await application.start()
             await application.updater.start_polling(
-                allowed_updates=application.updater.ALL_TYPES
+                allowed_updates=Update.ALL_TYPES
             )
 
-            health_runner = await _start_health_server(port)
-            logger.info("Bot polling started; health endpoint on port %s", port)
+            logger.info("Bot polling started; ready for requests")
 
             # Keep running until cancelled
             while True:
@@ -87,12 +92,14 @@ async def _run_bot_with_healthcheck() -> None:
         logger.critical("Fatal error starting bot: %s", exc, exc_info=True)
         raise
     finally:
-        if application.updater.running:
-            await application.updater.stop()
-        await application.stop()
-        await application.shutdown()
-        if health_runner:
-            await health_runner.cleanup()
+        with suppress(Exception):
+            if application.updater.running:
+                await application.updater.stop()
+            await application.stop()
+            await application.shutdown()
+        with suppress(Exception):
+            if health_runner:
+                await health_runner.cleanup()
 
 
 def main() -> None:
