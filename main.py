@@ -2,74 +2,91 @@ import sys
 import os
 import asyncio
 import logging
+from contextlib import suppress
 from aiohttp import web
-from telegram import Update
-from app.bot import CsxTradingBot  # Ensure this path is correct
 
-# Configure logging to be visible in Google Cloud Logs
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
-async def health_check(request):
-    """Simple 200 OK for Cloud Run health probes."""
-    return web.Response(text="Bot is alive", status=200)
 
-async def run_bot():
-    """Main entry point to run the bot and health server."""
-    port = int(os.getenv("PORT", "8080"))
-    
-    # 1. Setup the Web Health Server
+def print_startup_banner():
+    banner = """
+╔══════════════════════════════════════════════════════════════╗
+║          🚀 CSX TRADING JOURNAL BOT STARTING 🚀              ║
+║  Status: ✅ Booting...                                       ║
+╚══════════════════════════════════════════════════════════════╝
+"""
+    print(banner)
+    sys.stdout.flush()
+
+
+async def _start_health_server(port: int) -> web.AppRunner:
     app = web.Application()
-    app.router.add_get("/", health_check)
-    app.router.add_get("/healthz", health_check)
-    
+
+    async def _health(_: web.Request) -> web.Response:
+        return web.Response(text="OK", status=200)
+
+    app.router.add_get("/", _health)
+    app.router.add_get("/healthz", _health)
+
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
-    
-    # 2. Build the Telegram Application
-    try:
-        bot_controller = CsxTradingBot()
-        application = bot_controller.build_app()
-    except Exception as e:
-        logger.critical(f"Failed to build bot application: {e}", exc_info=True)
-        sys.exit(1)
-
-    # 3. Start everything
+    site = web.TCPSite(runner, host="0.0.0.0", port=port)
     await site.start()
-    logger.info(f"✅ Health server started on port {port}")
+    logger.info("Health endpoint started on port %s", port)
+    return runner
 
-    async with application:
-        try:
+
+async def _run() -> None:
+    print_startup_banner()
+    port = int(os.getenv("PORT", "8080"))
+
+    # Start health server ASAP so Cloud Run sees the port
+    health_runner = await _start_health_server(port)
+
+    # Import AFTER health server is up (prevents probe failures if bot init is slow)
+    from telegram import Update
+    from app.bot import CsxTradingBot
+
+    bot_controller = CsxTradingBot()
+    application = bot_controller.build_app()
+
+    try:
+        async with application:
             await application.initialize()
             await application.start()
-            
-            # Start polling in the background
-            await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
-            logger.info("🚀 Bot polling active and healthy.")
 
-            # Keep the loop running
+            # start_polling exists only if updater is configured.
+            # If this errors, switch to application.run_polling() in a non-async main.
+            await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+
+            logger.info("Bot polling started; ready for requests")
+
             while True:
                 await asyncio.sleep(3600)
-                
-        except Exception as e:
-            logger.error(f"Fatal error during bot execution: {e}", exc_info=True)
-        finally:
-            # Graceful shutdown
-            if application.updater.running:
+
+    except asyncio.CancelledError:
+        logger.info("Shutdown requested...")
+    finally:
+        with suppress(Exception):
+            if getattr(application, "updater", None) and application.updater.running:
                 await application.updater.stop()
             await application.stop()
             await application.shutdown()
-            await runner.cleanup()
+        with suppress(Exception):
+            await health_runner.cleanup()
+
+
+def main() -> None:
+    try:
+        asyncio.run(_run())
+    except Exception:
+        logger.exception("Fatal startup error")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(run_bot())
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Bot stopped by user.")
-    except Exception as e:
-        logger.critical(f"Unhandled Exception: {e}", exc_info=True)
-        sys.exit(1)
+    main()
