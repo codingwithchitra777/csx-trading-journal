@@ -48,21 +48,33 @@ async def _run() -> None:
     health_runner = await _start_health_server(port)
 
     # Import AFTER health server is up (prevents probe failures if bot init is slow)
+    logger.info("Importing bot modules...")
     from telegram import Update
     from app.bot import CsxTradingBot
+    logger.info("Bot modules imported.")
 
+    logger.info("Initializing CsxTradingBot...")
     bot_controller = CsxTradingBot()
+    logger.info("CsxTradingBot initialized.")
+
+    logger.info("Building application...")
     application = bot_controller.build_app()
+    logger.info("Application built.")
 
     try:
         async with application:
+            logger.info("Initializing application (connecting to Telegram)...")
             await application.initialize()
+            logger.info("Application initialized.")
+
+            logger.info("Starting application (starting scheduler)...")
             await application.start()
+            logger.info("Application started.")
 
             # start_polling exists only if updater is configured.
             # If this errors, switch to application.run_polling() in a non-async main.
+            logger.info("Starting polling...")
             await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
-
             logger.info("Bot polling started; ready for requests")
 
             while True:
