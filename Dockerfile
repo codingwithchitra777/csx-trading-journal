@@ -15,6 +15,9 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-build matplotlib font cache
+RUN python -c "import matplotlib.pyplot"
+
 # Copy application code
 COPY app/ ./app/
 
