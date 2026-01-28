@@ -22,7 +22,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--memory'
-      - '512Mi'
+      - '1024Mi'
       - '--cpu'
       - '1'
       - '--max-instances'
