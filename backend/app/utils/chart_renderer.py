@@ -3,18 +3,40 @@ from datetime import datetime
 from typing import Optional
 
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch
 import pytz
 
 from app.utils.theme import Theme
+
+matplotlib = None
+plt = None
+FancyBboxPatch = None
+
+
+def _ensure_matplotlib():
+    """Matplotlib's font-cache scan on first `import matplotlib.pyplot` can
+    take real time on a cold filesystem - it must never run at module import
+    time, only when a chart is actually rendered (Telegram bot only). Doing
+    it at import time blocked Uvicorn from ever binding a port on FastAPI
+    Cloud, which showed up as an unexplained "verification failed" with zero
+    runtime logs, since the process never got far enough to log anything."""
+    global matplotlib, plt, FancyBboxPatch
+    if plt is not None:
+        return
+    import matplotlib as _matplotlib
+    _matplotlib.use('Agg')
+    import matplotlib.pyplot as _plt
+    from matplotlib.patches import FancyBboxPatch as _FancyBboxPatch
+    matplotlib = _matplotlib
+    plt = _plt
+    FancyBboxPatch = _FancyBboxPatch
+
 
 class ChartRenderer:
     """
     Renders premium, TradingView-style dark mode charts.
     """
     def __init__(self, tz_name: str = "Asia/Phnom_Penh"):
+        _ensure_matplotlib()
         self.tz = pytz.timezone(tz_name)
         self.theme = Theme()
 

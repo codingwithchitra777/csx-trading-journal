@@ -18,10 +18,6 @@ from app.api.v1.api import api_router
 
 logger = logging.getLogger(__name__)
 
-# Configure headless rendering for Matplotlib immediately
-import matplotlib
-matplotlib.use('Agg')
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Re-assert logging config here too, in case fastapi-cli/uvicorn
@@ -64,6 +60,7 @@ def run_telegram_bot():
             pass
         loop.close()
         logger.info("Telegram Bot thread shutdown complete")
+
 
 app = FastAPI(
     title="CSX Trading Journal API",

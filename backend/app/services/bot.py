@@ -12,13 +12,6 @@ from dataclasses import dataclass
 from datetime import datetime, time
 from typing import Optional, Tuple, List
 
-import numpy as np
-import matplotlib
-matplotlib.use('Agg') 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch, Polygon
-
 import pytz
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
