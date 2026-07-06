@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ApiService {
-  private baseUrl = 'http://localhost:8080';
+  private baseUrl = 'https://trading-journal.fastapicloud.dev';
   
   // Active User ID signal - allows mock switcher in header to trigger reactive reloading
   // Active User ID signal - allows mock switcher in header to trigger reactive reloading

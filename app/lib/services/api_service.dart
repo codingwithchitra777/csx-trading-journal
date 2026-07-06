@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
@@ -8,14 +6,7 @@ class ApiService {
   static final ApiService instance = ApiService._internal();
   ApiService._internal();
 
-  // For Android Emulator, localhost is mapped to 10.0.2.2
-  // For web/iOS/desktop, localhost works as is.
-  String get baseUrl {
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:8080';
-    }
-    return 'http://localhost:8080';
-  }
+  String get baseUrl => 'https://trading-journal.fastapicloud.dev';
 
   // Active user ID: 'guest' until a Google (or demo) sign-in sets it, mirroring
   // the web app's ApiService.activeUserId default (frontend/src/app/services/api.service.ts).
