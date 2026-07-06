@@ -1,0 +1,52 @@
+name: Build Check & Telegram Notify
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      # Import-time crashes (e.g. matplotlib's HOME lookup, stdout.reconfigure
+      # on a wrapped stream) are exactly what FastAPI Cloud's "verification
+      # failed" status hides with no traceback - catching them here, on a
+      # plain Linux runner, surfaces the real error before it ever reaches
+      # the opaque deploy step.
+      - name: Import-check the app
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5433/trading_journal
+        run: python -c "import app.main"
+
+      - name: Notify Telegram
+        if: always()
+        env:
+          TELEGRAM_BUILD_BOT_TOKEN: ${{ secrets.TELEGRAM_BUILD_BOT_TOKEN }}
+          TELEGRAM_BUILD_CHAT_ID: ${{ secrets.TELEGRAM_BUILD_CHAT_ID }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ "$JOB_STATUS" = "success" ]; then
+            STATUS_LINE="✅ Build check passed"
+          else
+            STATUS_LINE="❌ Build check FAILED"
+          fi
+          MESSAGE="$STATUS_LINE
+          Repo: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+          By: ${{ github.actor }}
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BUILD_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_BUILD_CHAT_ID}" \
+            --data-urlencode text="$MESSAGE"

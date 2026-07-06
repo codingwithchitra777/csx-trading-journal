@@ -33,9 +33,15 @@ class JsonFormatter(logging.Formatter):
 
 def configure_logging() -> None:
     # Block-buffered stdout under a container pipe is why low-volume apps
-    # show no runtime logs for long stretches, or only in bursts.
-    sys.stdout.reconfigure(line_buffering=True)
-    sys.stderr.reconfigure(line_buffering=True)
+    # show no runtime logs for long stretches, or only in bursts. Some
+    # platforms wrap stdout/stderr in a non-TextIOWrapper stream to capture
+    # runtime logs themselves, where .reconfigure() doesn't exist or raises -
+    # that must never crash app startup, so it's best-effort only.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(line_buffering=True)
+        except (AttributeError, ValueError, OSError):
+            pass
 
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     use_json = os.getenv("LOG_FORMAT", "text").lower() == "json"
