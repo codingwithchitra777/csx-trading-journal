@@ -1,0 +1,350 @@
+Created At: 2026-07-05T08:40:14Z
+Completed At: 2026-07-05T08:40:14Z
+File Path: `file:///c:/workspace_coding_with_chitra/csx-trading-journal/frontend/src/app/app.html`
+Total Lines: 342
+Total Bytes: 15474
+Showing lines 1 to 342
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: <div class="app-container">
+2:   <!-- Header -->
+3:   <header class="app-header">
+4:     <div class="header-logo">
+5:       <span class="logo-emoji">🚀</span>
+6:       <h1 class="logo-text">CSX Trading Journal</h1>
+7:     </div>
+8:     
+9:     <div class="header-nav">
+10:       <button [class.active]="activeView() === 'dashboard'" (click)="activeView.set('dashboard')">📊 Dashboard</button>
+11:       <button [class.active]="activeView() === 'portfolio'" (click)="activeView.set('portfolio')">💼 Portfolio</button>
+12:       <button [class.active]="activeView() === 'record'" (click)="activeView.set('record')">➕ Record Trade</button>
+13:       <button [class.active]="activeView() === 'history'" (click)="activeView.set('history')">📜 History</button>
+14:     </div>
+15: 
+16:     <div class="header-user">
+17:       <!-- Demo switcher shown only when not signed in with Google -->
+18:       <ng-container *ngIf="!googleProfile()">
+19:         <label for="userSelect">User:</label>
+20:         <select id="userSelect" (change)="onUserChange($event)" [value]="apiService.activeUserId()">
+21:           <option *ngFor="let u of users" [value]="u.id">{{ u.name }}</option>
+22:         </select>
+23: 
+24:         <!-- Google GSI Setup & Button -->
+25:         <div id="g_id_onload"
+26:              data-client_id="967044044463-ijf8dee8eh8b7mvip7ojqf58khd3v0vu.apps.googleusercontent.com"
+27:              data-context="signin"
+28:              data-ux_mode="popup"
+29:              data-callback="onGoogleSignIn"
+30:              data-auto_prompt="false">
+31:         </div>
+32:         <div class="g_id_signin"
+33:              data-type="standard"
+34:              data-shape="rectangular"
+35:              data-theme="dark"
+36:              data-text="signin_with"
+37:              data-size="medium"
+38:              data-logo_alignment="left">
+39:         </div>
+40:       </ng-container>
+41: 
+42:       <!-- Google Profile info when signed in -->
+43:       <ng-container *ngIf="googleProfile()">
+44:         <div class="google-profile-info" style="display:flex; align-items:center; gap:8px;">
+45:           <span style="font-size:13px; font-weight:600; color:#10b981;">👤 {{ googleProfile().name }}</span>
+46:           <button (click)="logoutGoogle()" style="background:#ef4444; border:none; color:white; padding:6px 12px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:600;">Sign Out</button>
+47:         </div>
+48:       </ng-container>
+49: 
+50:       <button class="refresh-btn" (click)="reloadData(); loadPrices()" title="Refresh Data">🔄</button>
+51:     </div>
+52:   </header>
+53: 
+54:   <!-- Body Content -->
+55:   <main class="app-body">
+56:     
+57:     <!-- DASHBOARD VIEW -->
+58:     <div *ngIf="activeView() === 'dashboard'" class="view-container animate-fade-in">
+59:       <!-- Metric Highlights -->
+60:       <section class="metrics-grid">
+61:         <div class="metric-card">
+62:           <span class="metric-title">Realised P/L</span>
+63:           <span class="metric-value" [ngClass]="totalRealisedPnl >= 0 ? 'text-profit' : 'text-loss'">
+64:             {{ totalRealisedPnl >= 0 ? '+' : '' }}{{ totalRealisedPnl | number }} <span class="currency">riel</span>
+65:           </span>
+66:         </div>
+67:         <div class="metric-card">
+68:           <span class="metric-title">Unrealised P/L</span>
+69:           <span class="metric-value" [ngClass]="totalUnrealisedPnl >= 0 ? 'text-profit' : 'text-loss'">
+70:             {{ totalUnrealisedPnl >= 0 ? '+' : '' }}{{ totalUnrealisedPnl | number }} <span class="currency">riel</span>
+71:           </span>
+72:         </div>
+73:         <div class="metric-card">
+74:           <span class="metric-title">Total P/L</span>
+75:           <span class="metric-value" [ngClass]="totalPnl >= 0 ? 'text-profit' : 'text-loss'">
+76:             {{ totalPnl >= 0 ? '+' : '' }}{{ totalPnl | number }} <span class="currency">riel</span>
+77:           </span>
+78:         </div>
+79:       </section>
+80: 
+81:       <!-- Dashboard Columns -->
+82:       <div class="dashboard-columns">
+83:         <!-- Live Market Prices -->
+84:         <div class="dashboard-panel">
+85:           <h2 class="panel-title">📈 CSX Market Prices</h2>
+86:           <div *ngIf="loadingPrices()" class="panel-loader">Loading prices...</div>
+87:           <div *ngIf="!loadingPrices()" class="table-container">
+88:             <table class="data-table">
+89:               <thead>
+90:                 <tr>
+91:                   <th>Ticker</th>
+92:                   <th>Price (riel)</th>
+93:                   <th>Change</th>
+94:                 </tr>
+95:               </thead>
+96:               <tbody>
+97:                 <tr *ngFor="let p of prices()">
+98:                   <td class="font-bold">{{ p.ticker }}</td>
+99:                   <td>{{ p.price | number }}</td>
+100:                   <td [ngClass]="p.change_direction === 'up' ? 'text-profit' : (p.change_direction === 'down' ? 'text-loss' : 'text-neutral')">
+101:                     <span *ngIf="p.change_direction === 'up'">▲</span>
+102:                     <span *ngIf="p.change_direction === 'down'">▼</span>
+103:                     {{ p.change | number }}
+104:                   </td>
+105:                 </tr>
+106:                 <tr *ngIf="prices().length === 0">
+107:                   <td colspan="3" class="text-center">No market prices available.</td>
+108:                 </tr>
+109:               </tbody>
+110:             </table>
+111:           </div>
+112:         </div>
+113: 
+114:         <!-- Top Rankings -->
+115:         <div class="dashboard-panel-group">
+116:           <!-- Top Tickers -->
+117:           <div class="dashboard-panel panel-sm">
+118:             <h2 class="panel-title">🏆 Top Tickers (Realised P/L)</h2>
+119:             <div class="ranking-list">
+120:               <div *ngFor="let t of topTickers(); let i = index" class="ranking-item">
+121:                 <span class="ranking-rank">#{{ i + 1 }}</span>
+122:                 <span class="ranking-name">{{ t.ticker }}</span>
+123:                 <span class="ranking-val text-profit">+{{ t.realisedPnl | number }} riel</span>
+124:               </div>
+125:               <div *ngIf="topTickers().length === 0" class="ranking-empty">No trading history yet.</div>
+126:             </div>
+127:           </div>
+128: 
+129:           <!-- Top Orders -->
+130:           <div class="dashboard-panel panel-sm">
+131:             <h2 class="panel-title">🥇 Top Orders (Realised P/L)</h2>
+132:             <div class="ranking-list">
+133:               <div *ngFor="let o of topOrders(); let i = index" class="ranking-item">
+134:                 <span class="ranking-rank">#{{ i + 1 }}</span>
+135:                 <span class="ranking-name">{{ o.ticker }} (Lot #{{ o.seq }})</span>
+136:                 <span class="ranking-val text-profit">+{{ o.realisedPnl | number }} riel</span>
+137:               </div>
+138:               <div *ngIf="topOrders().length === 0" class="ranking-empty">No trading history yet.</div>
+139:             </div>
+140:           </div>
+141:         </div>
+142:       </div>
+143:     </div>
+144: 
+145:     <!-- PORTFOLIO VIEW -->
+146:     <div *ngIf="activeView() === 'portfolio'" class="view-container animate-fade-in">
+147:       <div class="portfolio-layout">
+148:         <!-- Holdings Grid -->
+149:         <div class="portfolio-list-panel">
+150:           <h2 class="panel-title">💼 Active Positions</h2>
+151:           <div *ngIf="loadingPortfolio()" class="panel-loader">Loading portfolio...</div>
+152:           <div *ngIf="!loadingPortfolio()" class="table-container">
+153:             <table class="data-table selectable-rows">
+154:               <thead>
+155:                 <tr>
+156:                   <th>Ticker</th>
+157:                   <th>Last Price</th>
+158:                   <th>Remaining Qty</th>
+159:                   <th>Sold %</th>
+160:                   <th>Avg Cost</th>
+161:                   <th>Total P/L</th>
+162:                 </tr>
+163:               </thead>
+164:               <tbody>
+165:                 <tr *ngFor="let h of portfolio()" (click)="selectHolding(h)" [class.selected]="selectedHolding()?.ticker === h.ticker">
+166:                   <td class="font-bold">{{ h.ticker }}</td>
+167:                   <td>{{ h.lastPrice | number }}</td>
+168:                   <td>{{ h.remainingQty | number }}</td>
+169:                   <td>{{ h.soldPercent | number:'1.1-1' }}%</td>
+170:                   <td>{{ h.avgCostRemaining | number:'1.0-0' }}</td>
+171:                   <td [ngClass]="h.totalPnl >= 0 ? 'text-profit' : 'text-loss'">
+172:                     {{ h.totalPnl >= 0 ? '+' : '' }}{{ h.totalPnl | number }}
+173:                   </td>
+174:                 </tr>
+175:                 <tr *ngIf="portfolio().length === 0">
+176:                   <td colspan="6" class="text-center">No active positions. Buy some stocks to get started!</td>
+177:                 </tr>
+178:               </tbody>
+179:             </table>
+180:           </div>
+181:         </div>
+182: 
+183:         <!-- Position Lots Breakdown (Details) -->
+184:         <div class="portfolio-details-panel">
+185:           <h2 class="panel-title">🔍 Position Detail: {{ selectedHolding()?.ticker || 'Select a stock' }}</h2>
+186:           
+187:           <div *ngIf="!selectedHolding()" class="details-placeholder">
+188:             Click on any position in the table to view its detailed remaining lots (LIFO matching allocation).
+189:           </div>
+190: 
+191:           <div *ngIf="selectedHolding() && loadingDetails()" class="panel-loader">Loading details...</div>
+192: 
+193:           <div *ngIf="selectedHolding() && !loadingDetails() && holdingDetails()" class="details-content">
+194:             <div class="details-summary-row">
+195:               <div><strong>Bought:</strong> {{ holdingDetails().totalBoughtQty }}</div>
+196:               <div><strong>Sold:</strong> {{ holdingDetails().totalSoldQty }}</div>
+197:               <div><strong>Remaining:</strong> {{ holdingDetails().remainingQty }}</div>
+198:             </div>
+199: 
+200:             <!-- Stock Chart -->
+201:             <div class="chart-section">
+202:               <img [src]="apiService.getChartUrl(selectedHolding().ticker)" alt="Stock Chart">
+203:             </div>
+204: 
+205:             <!-- BUY LOTS PANEL -->
+206:             <div class="lots-section">
+207:               <h3 class="section-subtitle">📥 Buy Lots (LIFO Allocation Remaining)</h3>
+208:               <div class="lots-list">
+209:                 <div *ngFor="let lot of holdingDetails().remainingLots" class="lot-card">
+210:                   <div class="lot-header">
+211:                     <span class="lot-seq">Seq #{{ lot.seq }}</span>
+212:                     <span class="lot-status" [ngClass]="lot.qtyOpen > 0 ? 'status-open' : 'status-sold'">
+213:                       {{ lot.qtyOpen > 0 ? '🟢 Open' : '⚪ Sold' }}
+214:                     </span>
+215:                   </div>
+216:                   <div class="lot-body">
+217:                     <div>Remaining: <strong>{{ lot.qtyOpen }} / {{ lot.qtyOriginal }}</strong> shares</div>
+218:                     <div>Price: <strong>{{ lot.price | number }} riel</strong></div>
+219:                     <div>Date: <span class="date-text">{{ lot.orderDate | date:'mediumDate' }}</span></div>
+220:                   </div>
+221:                 </div>
+222:                 <div *ngIf="holdingDetails().remainingLots.length === 0" class="empty-lots">No open lots remaining.</div>
+223:               </div>
+224:             </div>
+225:           </div>
+226:         </div>
+227:       </div>
+228:     </div>
+229: 
+230:     <!-- RECORD TRADE VIEW -->
+231:     <div *ngIf="activeView() === 'record'" class="view-container animate-fade-in centered-view">
+232:       <div class="form-card">
+233:         <h2 class="panel-title">➕ Record New Trade</h2>
+234:         <form (ngSubmit)="submitTrade()" class="trade-form">
+235:           <div class="form-group">
+236:             <label for="ticker">Ticker Symbol:</label>
+237:             <input type="text" id="ticker" name="ticker" [(ngModel)]="tradeTicker" placeholder="e.g. ABC" required>
+238:           </div>
+239: 
+240:           <div class="form-group">
+241:             <label>Trade Action:</label>
+242:             <div class="radio-group">
+243:               <label class="radio-label">
+244:                 <input type="radio" name="side" [(ngModel)]="tradeSide" value="BUY">
+245:                 <span class="radio-custom buy-selector">BUY</span>
+246:               </label>
+247:               <label class="radio-label">
+248:                 <input type="radio" name="side" [(ngModel)]="tradeSide" value="SELL">
+249:                 <span class="radio-custom sell-selector">SELL</span>
+250:               </label>
+251:             </div>
+252:           </div>
+253: 
+254:           <div class="form-group">
+255:             <label for="price">Price per Share (riel):</label>
+256:             <input type="number" id="price" name="price" [(ngModel)]="tradePrice" placeholder="e.g. 7300" required min="1">
+257:           </div>
+258: 
+259:           <div class="form-group">
+260:             <label for="qty">Quantity (shares):</label>
+261:             <input type="number" id="qty" name="qty" [(ngModel)]="tradeQty" placeholder="e.g. 100" required min="1">
+262:           </div>
+263: 
+264:           <button type="submit" class="submit-btn" [ngClass]="tradeSide === 'BUY' ? 'btn-buy' : 'btn-sell'">
+265:             Confirm {{ tradeSide }}
+266:           </button>
+267:         </form>
+268: 
+269:         <!-- Feedback Messages -->
+270:         <div *ngIf="tradeError()" class="alert alert-danger animate-slide-in">
+271:           ❌ {{ tradeError() }}
+272:         </div>
+273: 
+274:         <div *ngIf="tradeSuccess()" class="alert alert-success animate-slide-in">
+275:           <h3>✅ Trade Confirmed!</h3>
+276:           <p>Recorded <strong>{{ tradeSuccess().trade.qty }}</strong> shares of <strong>{{ tradeSuccess().trade.ticker }}</strong> @ <strong>{{ tradeSuccess().trade.price | number }} riel</strong>.</p>
+277:           <div *ngIf="tradeSuccess().warning" class="warning-box">
+278:             ⚠️ {{ tradeSuccess().warning }}
+279:           </div>
+280:           <div *ngIf="tradeSuccess().trade.side === 'SELL' && tradeSuccess().allocations && tradeSuccess().allocations.length > 0" class="matching-details">
+281:             <hr>
+282:             <h4>📦 LIFO Matched Lots:</h4>
+283:             <ul>
+284:               <li *ngFor="let a of tradeSuccess().allocations">
+285:                 Matched <strong>{{ a.qtyAllocated }}</strong> shares from Buy lot @ <strong>{{ a.buyPrice | number }} riel</strong>.
+286:               </li>
+287:             </ul>
+288:             <p class="realised-pnl-summary">
+289:               Realised Profit/Loss: 
+290:               <span [ngClass]="tradeSuccess().realisedPnl >= 0 ? 'text-profit' : 'text-loss'">
+291:                 {{ tradeSuccess().realisedPnl >= 0 ? '+' : '' }}{{ tradeSuccess().realisedPnl | number }} riel
+292:               </span>
+293:             </p>
+294:           </div>
+295:         </div>
+296:       </div>
+297:     </div>
+298: 
+299:     <!-- TRADE HISTORY VIEW -->
+300:     <div *ngIf="activeView() === 'history'" class="view-container animate-fade-in">
+301:       <div class="dashboard-panel full-width">
+302:         <h2 class="panel-title">📜 Complete Trade Ledger</h2>
+303:         <div *ngIf="loadingTrades()" class="panel-loader">Loading trade ledger...</div>
+304:         <div *ngIf="!loadingTrades()" class="table-container">
+305:           <table class="data-table">
+306:             <thead>
+307:               <tr>
+308:                 <th>Seq #</th>
+309:                 <th>Date</th>
+310:                 <th>Ticker</th>
+311:                 <th>Action</th>
+312:                 <th>Price (riel)</th>
+313:                 <th>Quantity</th>
+314:                 <th>Commission (riel)</th>
+315:               </tr>
+316:             </thead>
+317:             <tbody>
+318:               <tr *ngFor="let t of trades()">
+319:                 <td>#{{ t.seq }}</td>
+320:                 <td>{{ t.orderDate | date:'medium' }}</td>
+321:                 <td class="font-bold">{{ t.ticker }}</td>
+322:                 <td>
+323:                   <span class="badge" [ngClass]="t.side === 'BUY' ? 'badge-buy' : 'badge-sell'">
+324:                     {{ t.side }}
+325:                   </span>
+326:                 </td>
+327:                 <td>{{ t.price | number }}</td>
+328:                 <td>{{ t.qty | number }}</td>
+329:                 <td class="text-muted">{{ t.commission | number }}</td>
+330:               </tr>
+331:               <tr *ngIf="trades().length === 0">
+332:                 <td colspan="7" class="text-center">No trades recorded yet.</td>
+333:               </tr>
+334:             </tbody>
+335:           </table>
+336:         </div>
+337:       </div>
+338:     </div>
+339: 
+340:   </main>
+341: </div>
+342: 
+The above content shows the entire, complete file contents of the requested file.
