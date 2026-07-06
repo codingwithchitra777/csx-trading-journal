@@ -22,7 +22,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--memory'
-      - '512Mi'
+      - '1024Mi'
       - '--cpu'
       - '1'
       - '--max-instances'
@@ -34,7 +34,7 @@ steps:
       - '--set-secrets'
       - 'TELEGRAM_BOT_TOKEN=telegram-bot-token:latest,FIREBASE_CREDENTIALS=firebase-service-account:latest'
       - '--set-env-vars'
-      - 'FIREBASE_PROJECT_ID=codingwithchitra-3b07d'
+      - 'FIREBASE_PROJECT_ID=codingwithchitra-eacf9'
 
 images:
   - 'gcr.io/$PROJECT_ID/csx-trading-journal:$COMMIT_SHA'

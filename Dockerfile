@@ -15,10 +15,14 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-build matplotlib font cache in a specific directory
+ENV MPLCONFIGDIR=/app/mpl_cache
+RUN mkdir -p $MPLCONFIGDIR && python -c "import matplotlib.pyplot"
+
 # Copy application code
 COPY app/ ./app/
-COPY firebase/ ./firebase/
 COPY main.py .
+COPY entrypoint.sh .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -27,6 +31,6 @@ ENV PYTHONUNBUFFERED=1
 # We'll use a simple HTTP server wrapper for health checks
 EXPOSE 8080
 
-# Start the bot
-CMD exec python main.py
+# Start the bot via entrypoint script
+CMD ["./entrypoint.sh"]
 
