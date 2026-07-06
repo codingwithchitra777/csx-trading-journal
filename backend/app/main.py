@@ -4,10 +4,15 @@ import logging
 import threading
 import asyncio
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from telegram import Update
 
+from app.core.logging_config import configure_logging
+from app.core.middleware import RequestLoggingMiddleware
 from app.services.bot import CsxTradingBot
 from app.api.v1.api import api_router
 
@@ -19,10 +24,15 @@ matplotlib.use('Agg')
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Spawn Telegram Bot thread
+    # Re-assert logging config here too, in case fastapi-cli/uvicorn
+    # reconfigured logging after server startup and won the race against
+    # the import-time configure_logging() call in main.py.
+    configure_logging()
+    logger.info("startup: launching telegram bot thread")
     bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
     bot_thread.start()
     yield
+    logger.info("shutdown: fastapi app stopping")
 
 def run_telegram_bot():
     logger.info("Starting Telegram Bot thread...")
@@ -55,12 +65,6 @@ def run_telegram_bot():
         loop.close()
         logger.info("Telegram Bot thread shutdown complete")
 
-# Configure logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-
 app = FastAPI(
     title="CSX Trading Journal API",
     version="1.0.0",
@@ -75,6 +79,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    logger.warning("http_exception status=%s detail=%s path=%s", exc.status_code, exc.detail, request.url.path)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    logger.warning("validation_error path=%s errors=%s", request.url.path, exc.errors())
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request, exc):
+    logger.exception("unhandled_exception path=%s", request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 # Include unified API router
 app.include_router(api_router, prefix="/api")

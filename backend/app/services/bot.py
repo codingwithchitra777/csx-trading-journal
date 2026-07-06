@@ -33,11 +33,6 @@ from app.services.portfolio import PortfolioService
 from app.utils.chart_renderer import ChartRenderer
 from app.utils.theme import Theme
 
-# Configure Logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 

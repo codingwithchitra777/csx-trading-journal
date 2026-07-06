@@ -5,7 +5,6 @@ FastAPI Server Entry Point.
 
 import os
 import sys
-import logging
 
 # Must be set before matplotlib is imported anywhere (app.services.bot does this
 # at module load time) - containers with a non-root user may have no resolvable
@@ -15,14 +14,10 @@ os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 # Add parent directory to sys.path so app can be imported properly
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app.main import app
+from app.core.logging_config import configure_logging
+configure_logging()
 
-# Configure logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+from app.main import app
 
 if __name__ == "__main__":
     import uvicorn
