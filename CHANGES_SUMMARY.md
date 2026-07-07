@@ -172,4 +172,4 @@ The bot is ready to use! All features are working:
 - ✅ Fixed position display
 - ✅ Improved price handling
 
-Deploy and enjoy your enhanced CSX Trading Journal! 🚀
+Deploy and enjoy your enhanced Trading Journal! 🚀

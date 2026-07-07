@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from telegram import Update
 
+import logfire
+
 from app.core.logging_config import configure_logging
 from app.core.middleware import RequestLoggingMiddleware
 from app.services.bot import CsxTradingBot
@@ -63,10 +65,13 @@ def run_telegram_bot():
 
 
 app = FastAPI(
-    title="CSX Trading Journal API",
+    title="Trading Journal API",
     version="1.0.0",
     lifespan=lifespan
 )
+
+logfire.configure(service_name="csx-trading-journal-backend")
+logfire.instrument_fastapi(app)
 
 # CORS
 app.add_middleware(
@@ -132,7 +137,7 @@ if os.path.exists(frontend_dir):
 else:
     @app.get("/")
     async def root_fallback():
-        return {"message": "CSX Trading Journal API is active. Frontend build directory not found."}
+        return {"message": "Trading Journal API is active. Frontend build directory not found."}
 
 if __name__ == "__main__":
     import uvicorn

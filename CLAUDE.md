@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CSX Trading Journal tracks stock trades on the Cambodia Securities Exchange (CSX, prices in riel). One FastAPI backend serves three clients:
+Trading Journal tracks stock trades on the Cambodia Securities Exchange (CSX, prices in riel). One FastAPI backend serves three clients:
 
 - **Telegram bot** (`backend/app/services/bot.py`) — the primary interface, commands like `/buy`, `/sell`, `/portfolio`, `/stock`, `/position`. Runs in a background thread spawned from the FastAPI `lifespan` startup hook in `backend/app/main.py`, alongside the HTTP server, in the same process.
 - **Angular web frontend** (`frontend/`) — pages under `frontend/src/app/pages/` (dashboard, history, portfolio, login, record-trade) mirror the bot's functionality via the REST API.

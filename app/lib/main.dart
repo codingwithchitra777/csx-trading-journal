@@ -38,7 +38,7 @@ class _CsxTradingJournalAppState extends State<CsxTradingJournalApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CSX Trading Journal',
+      title: 'Trading Journal',
       debugShowCheckedModeBanner: false,
       locale: _locale,
       localizationsDelegates: const [

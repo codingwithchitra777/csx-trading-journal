@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║         CSX TRADING JOURNAL - LIFO UPDATE COMPLETE          ║
+║         TRADING JOURNAL - LIFO UPDATE COMPLETE          ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 
@@ -111,4 +111,4 @@ Then try:
 ✓ Professional dark theme
 
 
-🎊 ENJOY YOUR ENHANCED CSX TRADING JOURNAL! 🎊
+🎊 ENJOY YOUR ENHANCED TRADING JOURNAL! 🎊
