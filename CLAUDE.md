@@ -27,6 +27,8 @@ pytest test_api.py::test_trade_flow_lifo   # one test
 ```
 `backend/demo_charts.py`, `lifo_example.py`, `final_verification.py`, `test_changes.py`, `test_lowest_price.py` are standalone manual/demo scripts (plain `print` output, not pytest — run directly with `python <file>.py`), not part of the `pytest` suite. Note `final_verification.py` imports from stale module paths (`app.services_lifo`, `app.bot`) that no longer exist under the current `app/services/` layout — it's broken and safe to ignore or delete rather than fix.
 
+`backend/pyproject.toml` exists alongside `requirements.txt` solely for `fastapi deploy` to FastAPI Cloud (which requires `pyproject.toml`, not `requirements.txt`, and needs `tool.uv.package = false` since this isn't an installable package). Local dev still uses `pip install -r backend/requirements.txt` — keep both files' dependency versions in sync by hand when either changes. Same pattern in `hello-world-logfire/` (a standalone FastAPI Cloud sample/smoke-test app, not part of the real backend).
+
 ### Frontend (Angular)
 ```bash
 cd frontend
