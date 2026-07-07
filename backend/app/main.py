@@ -70,7 +70,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-logfire.configure(service_name="csx-trading-journal-backend")
+logfire.configure(token=os.getenv("LOGFIRE_TOKEN"), service_name="csx-trading-journal-backend")
 logfire.instrument_fastapi(app)
 
 # CORS
