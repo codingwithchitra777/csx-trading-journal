@@ -29,3 +29,5 @@ class Settings:
             raise ValueError("No Firebase credentials found")
 
 settings = Settings()
+
+
