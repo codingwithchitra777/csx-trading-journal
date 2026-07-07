@@ -10,13 +10,17 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from telegram import Update
+from dotenv import load_dotenv
 
 import logfire
 
+load_dotenv()
+
 from app.core.logging_config import configure_logging
 from app.core.middleware import RequestLoggingMiddleware
-from app.services.bot import CsxTradingBot
-from app.api.v1.api import api_router
+# TEMP: disabled while isolating a FastAPI Cloud deploy hang - re-enable after testing
+# from app.services.bot import CsxTradingBot
+# from app.api.v1.api import api_router
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +30,10 @@ async def lifespan(app: FastAPI):
     # reconfigured logging after server startup and won the race against
     # the import-time configure_logging() call in main.py.
     configure_logging()
-    logger.info("startup: launching telegram bot thread")
-    bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
-    bot_thread.start()
+    # TEMP: disabled while isolating a FastAPI Cloud deploy hang - re-enable after testing
+    # logger.info("startup: launching telegram bot thread")
+    # bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
+    # bot_thread.start()
     yield
     logger.info("shutdown: fastapi app stopping")
 
@@ -101,8 +106,8 @@ async def unhandled_exception_handler(request, exc):
     logger.exception("unhandled_exception path=%s", request.url.path)
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
-# Include unified API router
-app.include_router(api_router, prefix="/api")
+# TEMP: disabled while isolating a FastAPI Cloud deploy hang - re-enable after testing
+# app.include_router(api_router, prefix="/api")
 
 # Base health check
 @app.get("/api/healthz")
