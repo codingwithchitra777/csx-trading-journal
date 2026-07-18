@@ -1,6 +1,20 @@
 <div class="view-container animate-fade-in">
   <div class="history-panel">
-    <h2 class="panel-title">📜 Complete Transaction History</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 class="panel-title" style="margin: 0; border: none; padding: 0;">📜 Complete Transaction History</h2>
+      
+      <div class="filter-group" style="display: flex; align-items: center; gap: 10px;">
+        <label for="marketFilter" style="color: #9ca3af; font-size: 14px; font-weight: 600;">Market:</label>
+        <select 
+          id="marketFilter" 
+          [(ngModel)]="filterTicker" 
+          (change)="onFilterChange()"
+          style="padding: 6px 12px; background: #0f172a; border: 1px solid #1e293b; color: #f0f6fc; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer; min-width: 120px;">
+          <option value="">All Markets</option>
+          <option *ngFor="let t of tickersList()" [value]="t.ticker">{{ t.ticker }}</option>
+        </select>
+      </div>
+    </div>
     <div *ngIf="loadingTrades()" class="panel-loader">Loading transaction history...</div>
     <div *ngIf="!loadingTrades()" class="table-container">
       <table class="data-table">
